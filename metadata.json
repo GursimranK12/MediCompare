@@ -1,0 +1,6 @@
+{
+  "name": "MediCompare - Healthcare Decision Platform",
+  "description": "A modern, premium healthcare comparison and decision-support dashboard for comparing hospitals, doctors, medicines, and diseases.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
