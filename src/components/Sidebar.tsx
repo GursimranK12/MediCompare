@@ -28,6 +28,7 @@ interface SidebarProps {
   savedCount: number;
   mobileOpen: boolean;
   setMobileOpen: (open: boolean) => void;
+  onLogout: () => void;
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({
@@ -38,6 +39,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   savedCount,
   mobileOpen,
   setMobileOpen,
+  onLogout,
 }) => {
   const mainNavItems = [
     { id: 'dashboard' as NavigationTab, label: 'Dashboard', icon: LayoutDashboard },
@@ -190,9 +192,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 if (item.id === 'help') {
                   alert('MediCompare Support Center: Contact 24/7 at support@medicompare.health or call 1-800-MEDI-HELP');
                 } else {
-                  if (confirm('Are you sure you want to log out of MediCompare?')) {
-                    setActiveTab('dashboard');
-                  }
+                  onLogout();
                 }
               }}
               id={`sidebar-${item.id}`}

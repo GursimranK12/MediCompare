@@ -12,6 +12,7 @@ import { UpcomingAppointmentCard } from './components/UpcomingAppointmentCard';
 import { RecommendedSection } from './components/RecommendedSection';
 import { RecentActivityTimeline } from './components/RecentActivityTimeline';
 import { DiseaseSearchSection } from './components/DiseaseSearchSection';
+import AuthView from './components/views/AuthView';
 
 // Views
 import { HospitalsView } from './components/views/HospitalsView';
@@ -53,6 +54,7 @@ import {
 export default function App() {
   // Navigation & UI State
   const [activeTab, setActiveTab] = useState<NavigationTab>('dashboard');
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [isMobileOpen, setIsMobileOpen] = useState(false);
 
@@ -195,359 +197,379 @@ export default function App() {
   // Total saved count for badge
   const totalSavedCount = savedHospitalIds.length + savedDoctorIds.length + savedMedicineIds.length;
 
-  return (
-    <div className="min-h-screen bg-slate-50 flex text-slate-800 font-['Plus_Jakarta_Sans',sans-serif]">
-      {/* 1. Sidebar Navigation */}
-      <Sidebar
-        activeTab={activeTab}
-        setActiveTab={(tab) => {
-          setActiveTab(tab);
-          setIsMobileOpen(false);
-          window.scrollTo({ top: 0, behavior: 'smooth' });
-        }}
-        isCollapsed={isSidebarCollapsed}
-        setIsCollapsed={setIsSidebarCollapsed}
-        savedCount={totalSavedCount}
-        mobileOpen={isMobileOpen}
-        setMobileOpen={setIsMobileOpen}
-      />
-
-      {/* Main Content Area */}
-      <div className="flex-1 flex flex-col min-w-0">
-        {/* 2. Top Navigation Bar */}
-        <TopNavbar
-          user={userProfile}
-          notifications={notifications}
-          setNotifications={setNotifications}
-          activeTab={activeTab}
-          setActiveTab={(tab) => setActiveTab(tab)}
-          setMobileOpen={setIsMobileOpen}
-          hospitals={hospitals}
-          doctors={doctors}
-          medicines={medicines}
-          diseases={diseases}
-          onSelectHospital={(h) => {
-            setActiveTab('hospitals');
-          }}
-          onSelectDoctor={(d) => {
-            setSelectedDoctorForBooking(d);
-            setIsBookModalOpen(true);
-          }}
-          onSelectMedicine={(m) => {
-            setActiveTab('medicines');
-          }}
-          onSelectDisease={(dis) => {
-            setActiveTab('diseases');
+return (
+    <>
+      {!isAuthenticated ? (
+        <AuthView
+          onLogin={(userData) => {
+            if (userData?.name) {
+              setUserProfile((prev) => ({
+                ...prev,
+                name: userData.name,
+                email: userData.email || prev.email,
+              }));
+            }
+            setIsAuthenticated(true);
           }}
         />
+      ) : (
+        <div className="min-h-screen bg-slate-50 flex text-slate-800 font-['Plus_Jakarta_Sans',sans-serif]">
+          {/* 1. Sidebar Navigation */}
+          <Sidebar
+            activeTab={activeTab}
+            setActiveTab={(tab) => {
+              setActiveTab(tab);
+              setIsMobileOpen(false);
+              window.scrollTo({ top: 0, behavior: 'smooth' });
+            }}
+            isCollapsed={isSidebarCollapsed}
+            setIsCollapsed={setIsSidebarCollapsed}
+            savedCount={totalSavedCount}
+            mobileOpen={isMobileOpen}
+            setMobileOpen={setIsMobileOpen}
+            onLogout={() => {
+              setIsAuthenticated(false);
+              setActiveTab('dashboard'); // Resets the dashboard for the next time they log in
+            }}
+          />
 
-        {/* Global Toast Alert */}
-        <AnimatePresence>
-          {toastMessage && (
-            <motion.div
-              initial={{ opacity: 0, y: -20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -20 }}
-              className="fixed top-20 right-6 z-50 px-4 py-3 bg-slate-900 text-white rounded-xl shadow-xl flex items-center gap-3 text-xs font-semibold border border-slate-700"
-            >
-              <div className="w-2 h-2 rounded-full bg-teal-400 animate-pulse" />
-              <span>{toastMessage}</span>
-            </motion.div>
-          )}
-        </AnimatePresence>
-
-        {/* Main Body View Rendering */}
-        <main className="flex-1 p-4 sm:p-6 lg:p-8 max-w-7xl w-full mx-auto space-y-8">
-          {activeTab === 'dashboard' && (
-            <div className="space-y-8">
-              {/* 3. Welcome Banner */}
-              <WelcomeBanner
-                user={userProfile}
-                userName={userProfile.name}
-                onStartComparing={() => {
-                  setComparisonCategory('hospitals');
-                  setIsFullComparisonModalOpen(true);
-                }}
-                onBookConsultation={() => {
-                  setSelectedDoctorForBooking(doctors[0]);
-                  setIsBookModalOpen(true);
-                }}
-              />
-
-              {/* 4. Signature Circular Health Hub */}
-              <HealthHub
-                onNavigate={(tab) => setActiveTab(tab)}
-                onOpenBooking={() => {
-                  setSelectedDoctorForBooking(doctors[0]);
-                  setIsBookModalOpen(true);
-                }}
-              />
-
-              {/* 5. 4 Primary Quick Action Cards */}
-              <QuickActionCards
-                onNavigate={(tab) => setActiveTab(tab)}
-                onOpenBooking={() => {
-                  setSelectedDoctorForBooking(doctors[0]);
-                  setIsBookModalOpen(true);
-                }}
-              />
-
-              {/* 6. Healthcare Statistics Counters */}
-              <HealthcareStats stats={healthcareStatsData} />
-
-              {/* 7. Comparison Cards Section (Hospitals, Doctors, Medicines) */}
-              <ComparisonSection
-                onCompareCategory={(category) => {
-                  setComparisonCategory(category);
-                  setIsFullComparisonModalOpen(true);
-                }}
-                onNavigateTab={(tab) => setActiveTab(tab)}
-              />
-
-              {/* 8. Interactive Side-by-Side Hospital Comparison Matrix */}
-              <VisualComparisonWidget
-                hospitals={hospitals}
-                onOpenFullComparison={() => {
-                  setComparisonCategory('hospitals');
-                  setIsFullComparisonModalOpen(true);
-                }}
-              />
-
-              {/* 9. Upcoming Appointment Card */}
-              {appointments.length > 0 && (
-                <UpcomingAppointmentCard
-                  appointment={appointments[0]}
-                  onViewDetails={() => setIsApptDetailsModalOpen(true)}
-                  onReschedule={() => setIsRescheduleModalOpen(true)}
-                />
-              )}
-
-              {/* 10. Recommended Healthcare Section */}
-              <RecommendedSection
-                hospital={hospitals[0]}
-                doctor={doctors[0]}
-                medicine={medicines[0]}
-                onSelectHospital={() => setActiveTab('hospitals')}
-                onSelectDoctor={(doc) => {
-                  setSelectedDoctorForBooking(doc);
-                  setIsBookModalOpen(true);
-                }}
-                onSelectMedicine={() => setActiveTab('medicines')}
-                onNavigate={(tab) => setActiveTab(tab)}
-              />
-
-              {/* 11. Recent Activity Timeline */}
-              <RecentActivityTimeline
-                activities={activities}
-                onExploreMore={() => setActiveTab('saved')}
-              />
-
-              {/* 12. "What are you looking for today?" Disease Search */}
-              <DiseaseSearchSection
-                diseases={diseases}
-                onSelectDisease={(disease) => {
-                  setActiveTab('diseases');
-                }}
-                onNavigate={(tab) => setActiveTab(tab)}
-              />
-            </div>
-          )}
-
-          {/* Hospitals Dedicated Directory View */}
-          {activeTab === 'hospitals' && (
-            <HospitalsView
+          {/* Main Content Area */}
+          <div className="flex-1 flex flex-col min-w-0">
+            {/* 2. Top Navigation Bar */}
+            <TopNavbar
+              user={userProfile}
+              notifications={notifications}
+              setNotifications={setNotifications}
+              activeTab={activeTab}
+              setActiveTab={(tab) => setActiveTab(tab)}
+              setMobileOpen={setIsMobileOpen}
               hospitals={hospitals}
-              savedHospitalIds={savedHospitalIds}
-              onToggleSave={handleToggleSaveHospital}
-              onOpenFullComparison={() => {
-                setComparisonCategory('hospitals');
-                setIsFullComparisonModalOpen(true);
-              }}
-              onSelectHospital={() => {
-                setComparisonCategory('hospitals');
-                setIsFullComparisonModalOpen(true);
-              }}
-            />
-          )}
-
-          {/* Doctors Dedicated Directory View */}
-          {activeTab === 'doctors' && (
-            <DoctorsView
               doctors={doctors}
-              savedDoctorIds={savedDoctorIds}
-              onToggleSave={handleToggleSaveDoctor}
-              onBookDoctor={(doc) => {
-                setSelectedDoctorForBooking(doc);
+              medicines={medicines}
+              diseases={diseases}
+              onSelectHospital={(h) => {
+                setActiveTab('hospitals');
+              }}
+              onSelectDoctor={(d) => {
+                setSelectedDoctorForBooking(d);
                 setIsBookModalOpen(true);
               }}
-              onSelectDoctor={(doc) => {
-                setSelectedDoctorForBooking(doc);
-                setIsBookModalOpen(true);
+              onSelectMedicine={(m) => {
+                setActiveTab('medicines');
+              }}
+              onSelectDisease={(dis) => {
+                setActiveTab('diseases');
               }}
             />
-          )}
 
-          {/* Appointments Tab */}
-          {activeTab === 'appointments' && (
-            <div className="space-y-6">
-              <div className="bg-white rounded-2xl border border-slate-200/80 p-6 shadow-xs flex items-center justify-between">
-                <div>
-                  <h1 className="text-2xl font-bold text-slate-900 font-['Outfit',sans-serif]">
-                    Your Healthcare Consultations
-                  </h1>
-                  <p className="text-xs sm:text-sm text-slate-500 mt-0.5">
-                    Manage upcoming appointments, past medical consults, and digital clinic check-in passes.
-                  </p>
-                </div>
-                <button
-                  onClick={() => {
-                    setSelectedDoctorForBooking(doctors[0]);
-                    setIsBookModalOpen(true);
-                  }}
-                  className="px-4 py-2.5 rounded-xl bg-teal-600 hover:bg-teal-700 text-white font-bold text-xs shadow-xs"
+            {/* Global Toast Alert */}
+            <AnimatePresence>
+              {toastMessage && (
+                <motion.div
+                  initial={{ opacity: 0, y: -20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -20 }}
+                  className="fixed top-20 right-6 z-50 px-4 py-3 bg-slate-900 text-white rounded-xl shadow-xl flex items-center gap-3 text-xs font-semibold border border-slate-700"
                 >
-                  Book New Appointment
-                </button>
-              </div>
+                  <div className="w-2 h-2 rounded-full bg-teal-400 animate-pulse" />
+                  <span>{toastMessage}</span>
+                </motion.div>
+              )}
+            </AnimatePresence>
 
-              {appointments.length > 0 ? (
-                <div className="space-y-4">
-                  {appointments.map((apt) => (
+            {/* Main Body View Rendering */}
+            <main className="flex-1 p-4 sm:p-6 lg:p-8 max-w-7xl w-full mx-auto space-y-8">
+              {activeTab === 'dashboard' && (
+                <div className="space-y-8">
+                  {/* 3. Welcome Banner */}
+                  <WelcomeBanner
+                    user={userProfile}
+                    userName={userProfile.name}
+                    onStartComparing={() => {
+                      setComparisonCategory('hospitals');
+                      setIsFullComparisonModalOpen(true);
+                    }}
+                    onBookConsultation={() => {
+                      setSelectedDoctorForBooking(doctors[0]);
+                      setIsBookModalOpen(true);
+                    }}
+                  />
+
+                  {/* 4. Signature Circular Health Hub */}
+                  <HealthHub
+                    onNavigate={(tab) => setActiveTab(tab)}
+                    onOpenBooking={() => {
+                      setSelectedDoctorForBooking(doctors[0]);
+                      setIsBookModalOpen(true);
+                    }}
+                  />
+
+                  {/* 5. 4 Primary Quick Action Cards */}
+                  <QuickActionCards
+                    onNavigate={(tab) => setActiveTab(tab)}
+                    onOpenBooking={() => {
+                      setSelectedDoctorForBooking(doctors[0]);
+                      setIsBookModalOpen(true);
+                    }}
+                  />
+
+                  {/* 6. Healthcare Statistics Counters */}
+                  <HealthcareStats stats={healthcareStatsData} />
+
+                  {/* 7. Comparison Cards Section (Hospitals, Doctors, Medicines) */}
+                  <ComparisonSection
+                    onCompareCategory={(category) => {
+                      setComparisonCategory(category);
+                      setIsFullComparisonModalOpen(true);
+                    }}
+                    onNavigateTab={(tab) => setActiveTab(tab)}
+                  />
+
+                  {/* 8. Interactive Side-by-Side Hospital Comparison Matrix */}
+                  <VisualComparisonWidget
+                    hospitals={hospitals}
+                    onOpenFullComparison={() => {
+                      setComparisonCategory('hospitals');
+                      setIsFullComparisonModalOpen(true);
+                    }}
+                  />
+
+                  {/* 9. Upcoming Appointment Card */}
+                  {appointments.length > 0 && (
                     <UpcomingAppointmentCard
-                      key={apt.id}
-                      appointment={apt}
+                      appointment={appointments[0]}
                       onViewDetails={() => setIsApptDetailsModalOpen(true)}
                       onReschedule={() => setIsRescheduleModalOpen(true)}
                     />
-                  ))}
-                </div>
-              ) : (
-                <div className="p-12 text-center bg-white rounded-2xl border border-slate-200">
-                  <p className="text-slate-500 text-sm">No scheduled appointments found.</p>
+                  )}
+
+                  {/* 10. Recommended Healthcare Section */}
+                  <RecommendedSection
+                    hospital={hospitals[0]}
+                    doctor={doctors[0]}
+                    medicine={medicines[0]}
+                    onSelectHospital={() => setActiveTab('hospitals')}
+                    onSelectDoctor={(doc) => {
+                      setSelectedDoctorForBooking(doc);
+                      setIsBookModalOpen(true);
+                    }}
+                    onSelectMedicine={() => setActiveTab('medicines')}
+                    onNavigate={(tab) => setActiveTab(tab)}
+                  />
+
+                  {/* 11. Recent Activity Timeline */}
+                  <RecentActivityTimeline
+                    activities={activities}
+                    onExploreMore={() => setActiveTab('saved')}
+                  />
+
+                  {/* 12. "What are you looking for today?" Disease Search */}
+                  <DiseaseSearchSection
+                    diseases={diseases}
+                    onSelectDisease={(disease) => {
+                      setActiveTab('diseases');
+                    }}
+                    onNavigate={(tab) => setActiveTab(tab)}
+                  />
                 </div>
               )}
-            </div>
-          )}
 
-          {/* Medicines & Bioequivalents Dedicated View */}
-          {activeTab === 'medicines' && (
-            <MedicinesView
-              medicines={medicines}
-              savedMedicineIds={savedMedicineIds}
-              onToggleSave={handleToggleSaveMedicine}
-              onSelectMedicine={() => {
-                setComparisonCategory('medicines');
-                setIsFullComparisonModalOpen(true);
+              {/* Hospitals Dedicated Directory View */}
+              {activeTab === 'hospitals' && (
+                <HospitalsView
+                  hospitals={hospitals}
+                  savedHospitalIds={savedHospitalIds}
+                  onToggleSave={handleToggleSaveHospital}
+                  onOpenFullComparison={() => {
+                    setComparisonCategory('hospitals');
+                    setIsFullComparisonModalOpen(true);
+                  }}
+                  onSelectHospital={() => {
+                    setComparisonCategory('hospitals');
+                    setIsFullComparisonModalOpen(true);
+                  }}
+                />
+              )}
+
+              {/* Doctors Dedicated Directory View */}
+              {activeTab === 'doctors' && (
+                <DoctorsView
+                  doctors={doctors}
+                  savedDoctorIds={savedDoctorIds}
+                  onToggleSave={handleToggleSaveDoctor}
+                  onBookDoctor={(doc) => {
+                    setSelectedDoctorForBooking(doc);
+                    setIsBookModalOpen(true);
+                  }}
+                  onSelectDoctor={(doc) => {
+                    setSelectedDoctorForBooking(doc);
+                    setIsBookModalOpen(true);
+                  }}
+                />
+              )}
+
+              {/* Appointments Tab */}
+              {activeTab === 'appointments' && (
+                <div className="space-y-6">
+                  <div className="bg-white rounded-2xl border border-slate-200/80 p-6 shadow-xs flex items-center justify-between">
+                    <div>
+                      <h1 className="text-2xl font-bold text-slate-900 font-['Outfit',sans-serif]">
+                        Your Healthcare Consultations
+                      </h1>
+                      <p className="text-xs sm:text-sm text-slate-500 mt-0.5">
+                        Manage upcoming appointments, past medical consults, and digital clinic check-in passes.
+                      </p>
+                    </div>
+                    <button
+                      onClick={() => {
+                        setSelectedDoctorForBooking(doctors[0]);
+                        setIsBookModalOpen(true);
+                      }}
+                      className="px-4 py-2.5 rounded-xl bg-teal-600 hover:bg-teal-700 text-white font-bold text-xs shadow-xs"
+                    >
+                      Book New Appointment
+                    </button>
+                  </div>
+
+                  {appointments.length > 0 ? (
+                    <div className="space-y-4">
+                      {appointments.map((apt) => (
+                        <UpcomingAppointmentCard
+                          key={apt.id}
+                          appointment={apt}
+                          onViewDetails={() => setIsApptDetailsModalOpen(true)}
+                          onReschedule={() => setIsRescheduleModalOpen(true)}
+                        />
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="p-12 text-center bg-white rounded-2xl border border-slate-200">
+                      <p className="text-slate-500 text-sm">No scheduled appointments found.</p>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Medicines & Bioequivalents Dedicated View */}
+              {activeTab === 'medicines' && (
+                <MedicinesView
+                  medicines={medicines}
+                  savedMedicineIds={savedMedicineIds}
+                  onToggleSave={handleToggleSaveMedicine}
+                  onSelectMedicine={() => {
+                    setComparisonCategory('medicines');
+                    setIsFullComparisonModalOpen(true);
+                  }}
+                />
+              )}
+
+              {/* Comparisons Dedicated Tab */}
+              {activeTab === 'comparisons' && (
+                <div className="space-y-6">
+                  <ComparisonSection
+                    onCompareCategory={(category) => {
+                      setComparisonCategory(category);
+                      setIsFullComparisonModalOpen(true);
+                    }}
+                    onNavigateTab={(tab) => setActiveTab(tab)}
+                  />
+                  <VisualComparisonWidget
+                    hospitals={hospitals}
+                    onOpenFullComparison={() => {
+                      setComparisonCategory('hospitals');
+                      setIsFullComparisonModalOpen(true);
+                    }}
+                  />
+                </div>
+              )}
+
+              {/* Disease Guide Dedicated View */}
+              {activeTab === 'diseases' && (
+                <DiseasesView
+                  diseases={diseases}
+                  onNavigate={(tab) => setActiveTab(tab)}
+                  onSelectDisease={() => {}}
+                />
+              )}
+
+              {/* Saved Bookmarks Vault */}
+              {activeTab === 'saved' && (
+                <SavedItemsView
+                  savedHospitals={hospitals.filter((h) => savedHospitalIds.includes(h.id))}
+                  savedDoctors={doctors.filter((d) => savedDoctorIds.includes(d.id))}
+                  savedMedicines={medicines.filter((m) => savedMedicineIds.includes(m.id))}
+                  onRemoveHospital={handleToggleSaveHospital}
+                  onRemoveDoctor={handleToggleSaveDoctor}
+                  onRemoveMedicine={handleToggleSaveMedicine}
+                  onNavigate={(tab) => setActiveTab(tab)}
+                  onOpenFullComparison={() => {
+                    setComparisonCategory('hospitals');
+                    setIsFullComparisonModalOpen(true);
+                  }}
+                  onBookDoctor={(doc) => {
+                    setSelectedDoctorForBooking(doc);
+                    setIsBookModalOpen(true);
+                  }}
+                />
+              )}
+
+              {/* Profile & Settings View */}
+              {(activeTab === 'profile' || activeTab === 'settings') && (
+                <ProfileSettingsView
+                  user={userProfile}
+                  onUpdateUser={(updated) => {
+                    setUserProfile(updated);
+                    showToast('Profile & preferences saved successfully');
+                  }}
+                />
+              )}
+            </main>
+          </div>
+
+          {/* Global Modals */}
+          {/* 1. Book Appointment Modal */}
+          <BookAppointmentModal
+            isOpen={isBookModalOpen}
+            onClose={() => setIsBookModalOpen(false)}
+            doctors={doctors}
+            hospitals={hospitals}
+            selectedDoctor={selectedDoctorForBooking}
+            onConfirmBooking={handleConfirmBooking}
+          />
+
+          {/* 2. Full Multi-Entity Comparison Modal */}
+          <FullComparisonModal
+            isOpen={isFullComparisonModalOpen}
+            onClose={() => setIsFullComparisonModalOpen(false)}
+            hospitals={hospitals}
+            doctors={doctors}
+            medicines={medicines}
+            initialCategory={comparisonCategory}
+          />
+
+          {/* 3. Appointment Pass Details Modal */}
+          {appointments.length > 0 && (
+            <AppointmentDetailsModal
+              isOpen={isApptDetailsModalOpen}
+              onClose={() => setIsApptDetailsModalOpen(false)}
+              appointment={appointments[0]}
+              onReschedule={() => {
+                setIsApptDetailsModalOpen(false);
+                setIsRescheduleModalOpen(true);
               }}
             />
           )}
 
-          {/* Comparisons Dedicated Tab */}
-          {activeTab === 'comparisons' && (
-            <div className="space-y-6">
-              <ComparisonSection
-                onCompareCategory={(category) => {
-                  setComparisonCategory(category);
-                  setIsFullComparisonModalOpen(true);
-                }}
-                onNavigateTab={(tab) => setActiveTab(tab)}
-              />
-              <VisualComparisonWidget
-                hospitals={hospitals}
-                onOpenFullComparison={() => {
-                  setComparisonCategory('hospitals');
-                  setIsFullComparisonModalOpen(true);
-                }}
-              />
-            </div>
-          )}
-
-          {/* Disease Guide Dedicated View */}
-          {activeTab === 'diseases' && (
-            <DiseasesView
-              diseases={diseases}
-              onNavigate={(tab) => setActiveTab(tab)}
-              onSelectDisease={() => {}}
+          {/* 4. Reschedule Modal */}
+          {appointments.length > 0 && (
+            <RescheduleModal
+              isOpen={isRescheduleModalOpen}
+              onClose={() => setIsRescheduleModalOpen(false)}
+              appointment={appointments[0]}
+              onConfirmReschedule={handleConfirmReschedule}
             />
           )}
-
-          {/* Saved Bookmarks Vault */}
-          {activeTab === 'saved' && (
-            <SavedItemsView
-              savedHospitals={hospitals.filter((h) => savedHospitalIds.includes(h.id))}
-              savedDoctors={doctors.filter((d) => savedDoctorIds.includes(d.id))}
-              savedMedicines={medicines.filter((m) => savedMedicineIds.includes(m.id))}
-              onRemoveHospital={handleToggleSaveHospital}
-              onRemoveDoctor={handleToggleSaveDoctor}
-              onRemoveMedicine={handleToggleSaveMedicine}
-              onNavigate={(tab) => setActiveTab(tab)}
-              onOpenFullComparison={() => {
-                setComparisonCategory('hospitals');
-                setIsFullComparisonModalOpen(true);
-              }}
-              onBookDoctor={(doc) => {
-                setSelectedDoctorForBooking(doc);
-                setIsBookModalOpen(true);
-              }}
-            />
-          )}
-
-          {/* Profile & Settings View */}
-          {(activeTab === 'profile' || activeTab === 'settings') && (
-            <ProfileSettingsView
-              user={userProfile}
-              onUpdateUser={(updated) => {
-                setUserProfile(updated);
-                showToast('Profile & preferences saved successfully');
-              }}
-            />
-          )}
-        </main>
-      </div>
-
-      {/* Global Modals */}
-      {/* 1. Book Appointment Modal */}
-      <BookAppointmentModal
-        isOpen={isBookModalOpen}
-        onClose={() => setIsBookModalOpen(false)}
-        doctors={doctors}
-        hospitals={hospitals}
-        selectedDoctor={selectedDoctorForBooking}
-        onConfirmBooking={handleConfirmBooking}
-      />
-
-      {/* 2. Full Multi-Entity Comparison Modal */}
-      <FullComparisonModal
-        isOpen={isFullComparisonModalOpen}
-        onClose={() => setIsFullComparisonModalOpen(false)}
-        hospitals={hospitals}
-        doctors={doctors}
-        medicines={medicines}
-        initialCategory={comparisonCategory}
-      />
-
-      {/* 3. Appointment Pass Details Modal */}
-      {appointments.length > 0 && (
-        <AppointmentDetailsModal
-          isOpen={isApptDetailsModalOpen}
-          onClose={() => setIsApptDetailsModalOpen(false)}
-          appointment={appointments[0]}
-          onReschedule={() => {
-            setIsApptDetailsModalOpen(false);
-            setIsRescheduleModalOpen(true);
-          }}
-        />
+        </div>
       )}
-
-      {/* 4. Reschedule Modal */}
-      {appointments.length > 0 && (
-        <RescheduleModal
-          isOpen={isRescheduleModalOpen}
-          onClose={() => setIsRescheduleModalOpen(false)}
-          appointment={appointments[0]}
-          onConfirmReschedule={handleConfirmReschedule}
-        />
-      )}
-    </div>
-  );
-}
+    </>
+  )};

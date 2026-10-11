@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { motion } from 'motion/react';
 import { Building2, Stethoscope, Pill, CalendarCheck, TrendingUp, CheckCircle } from 'lucide-react';
 
+// 1. This represents the internal data structure for your beautiful UI
 interface StatItem {
   id: string;
   label: string;
@@ -12,6 +13,23 @@ interface StatItem {
   icon: React.ElementType;
   color: string;
   bgColor: string;
+}
+
+// 2. This represents the data structure coming from App.tsx to satisfy TypeScript
+interface IncomingStatItem {
+  id: string;
+  label: string;
+  value: number;
+  suffix: string;
+  trend: string;
+  trendPositive: boolean;
+  description: string;
+  iconType: string;
+}
+
+// 3. Updated Props interface
+interface HealthcareStatsProps {
+  stats: IncomingStatItem[] | any[];
 }
 
 const STATS_DATA: StatItem[] = [
@@ -94,7 +112,8 @@ const CounterDisplay: React.FC<{ target: number; suffix: string; prefix?: string
   );
 };
 
-export const HealthcareStats: React.FC = () => {
+// 4. Updated function signature to accept the stats prop
+export const HealthcareStats: React.FC<HealthcareStatsProps> = ({ stats }) => {
   return (
     <section className="bg-white rounded-2xl border border-slate-200/80 p-5 sm:p-6 shadow-2xs" id="healthcare-overview-statistics">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-4 pb-3 border-b border-slate-100">
@@ -146,3 +165,5 @@ export const HealthcareStats: React.FC = () => {
     </section>
   );
 };
+
+export default HealthcareStats;

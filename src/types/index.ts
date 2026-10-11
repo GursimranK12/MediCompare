@@ -8,7 +8,8 @@ export type NavigationTab =
   | 'comparisons'
   | 'saved'
   | 'profile'
-  | 'settings';
+  | 'settings'
+  | 'auth';
 
 export interface Hospital {
   id: string;
